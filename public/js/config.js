@@ -7,7 +7,7 @@
 // Leave empty '' only when running locally (localhost:3000).
 // ============================================================
 
-const BACKEND_URL = '';  // <-- Replace with Railway URL after deployment
+const BACKEND_URL = 'https://web-production-e4dd5.up.railway.app';
 
 const API_URL = BACKEND_URL;
 const SOCKET_PATH = '/picmix/socket.io';
