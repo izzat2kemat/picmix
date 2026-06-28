@@ -25,7 +25,7 @@ const ALLOWED_ORIGINS = [
 const io = socketIo(server, {
   path: `${BASE_PATH}/socket.io`,
   cors: {
-    origin: ALLOWED_ORIGINS,
+    origin: true,
     methods: ['GET', 'POST'],
     credentials: true
   }
@@ -51,7 +51,9 @@ if (!fs.existsSync(defaultImagesDir)) {
 
 // Middleware
 app.use(cors({
-  origin: ALLOWED_ORIGINS,
+  origin: function(origin, callback) {
+    callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json());
