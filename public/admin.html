@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PicMix Admin Panel - Upload Puzzle Images</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">P</div>
+      <div class="logo-text">
+        <h1>PicMix Admin</h1>
+        <span>by AI Budak batu 9 cheras</span>
+      </div>
+    </div>
+    
+    <div class="nav-links">
+      <a href="/" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.75rem;">
+        🎮 Return to Lobby
+      </a>
+    </div>
+  </header>
+
+  <!-- Admin Interface Container -->
+  <main style="max-width: 700px; margin: 50px auto; padding: 0 20px;">
+    
+    <div class="glass-panel" style="padding: 40px; text-align: center;">
+      <h2 style="font-family: var(--font-display); font-size: 2.2rem; margin-bottom: 8px; background: linear-gradient(135deg, #fff, var(--color-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        Image Assets Manager
+      </h2>
+      <p style="color: var(--text-muted); margin-bottom: 30px;">
+        Upload new image files to expand the pool of sliding puzzles available during matchmaking.
+      </p>
+      
+      <!-- Upload Form -->
+      <form id="upload-form" enctype="multipart/form-data">
+        <div class="input-group">
+          <label for="image-name">Puzzle Display Name</label>
+          <input type="text" id="image-name" name="name" class="input-field" placeholder="e.g. Glowing Forest, Neon Tiger" required>
+        </div>
+        
+        <div class="input-group">
+          <label>Select Square Image Asset</label>
+          <!-- Custom Visual File Uploader -->
+          <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <div class="upload-icon">📤</div>
+            <p id="upload-instruction" style="font-weight: 600;">Click or Drag & Drop image file here</p>
+            <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 5px;">Supports JPG, PNG, WEBP. Ideal size: 800x800 px square</p>
+            <input type="file" id="file-input" name="image" accept="image/*" style="display: none;" required>
+          </div>
+        </div>
+        
+        <!-- Image Preview Card -->
+        <div id="preview-wrapper" class="glass-panel" style="display: none; padding: 15px; margin-bottom: 20px; align-items: center; gap: 15px; text-align: left; background: rgba(0,0,0,0.2);">
+          <img id="image-preview" src="" alt="Upload Preview" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-glass);">
+          <div>
+            <strong id="preview-filename" style="display: block; font-size: 0.9rem;">filename.png</strong>
+            <span id="preview-filesize" style="font-size: 0.75rem; color: var(--text-muted);">0 KB</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+          🚀 Publish Puzzle Image
+        </button>
+      </form>
+    </div>
+    
+  </main>
+
+  <div id="toast-container" class="toast">
+    <span id="toast-msg">Notification</span>
+  </div>
+
+  <script src="/js/config.js"></script>
+  <script>
+    // API_URL loaded from config.js
+    
+    // Toast Helper
+    function showToast(msg, type = 'info') {
+      const toast = document.getElementById('toast-container');
+      const toastMsg = document.getElementById('toast-msg');
+      toast.className = 'toast';
+      if (type === 'error') toast.classList.add('error');
+      if (type === 'success') toast.classList.add('success');
+      toastMsg.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    // Verify Admin Credentials on page load
+    async function verifyAdmin() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Unauthorized access. Please log in first.');
+        window.location.href = '/';
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_URL}/picmix/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (!data.success || !data.user.isAdmin) {
+          alert('Access denied. Administrator credentials required.');
+          window.location.href = '/';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Failed to connect to auth server.');
+        window.location.href = '/';
+      }
+    }
+
+    // Handle Input change & drag-drops for previews
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const previewWrapper = document.getElementById('preview-wrapper');
+    const imagePreview = document.getElementById('image-preview');
+    const previewFilename = document.getElementById('preview-filename');
+    const previewFilesize = document.getElementById('preview-filesize');
+    
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      handleFileSelected(file);
+    });
+
+    // Drag-over styling
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--color-primary)';
+      dropZone.style.background = 'rgba(99, 102, 241, 0.08)';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = 'var(--border-glass)';
+      dropZone.style.background = 'transparent';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--border-glass)';
+      dropZone.style.background = 'transparent';
+      
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileSelected(file);
+      } else {
+        showToast('Please upload an image file.', 'error');
+      }
+    });
+
+    function handleFileSelected(file) {
+      if (!file) return;
+      
+      previewFilename.textContent = file.name;
+      previewFilesize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreview.src = e.target.result;
+        previewWrapper.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+      
+      document.getElementById('upload-instruction').textContent = 'Image selected! Click to replace.';
+    }
+
+    // Submit Upload
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const token = localStorage.getItem('token');
+      const name = document.getElementById('image-name').value;
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        showToast('Please select a file to upload.', 'error');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('image', file);
+      
+      try {
+        showToast('Uploading file...', 'info');
+        const res = await fetch(`${API_URL}/picmix/api/admin/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('Image uploaded successfully!', 'success');
+          // Reset form fields
+          document.getElementById('upload-form').reset();
+          previewWrapper.style.display = 'none';
+          document.getElementById('upload-instruction').textContent = 'Click or Drag & Drop image file here';
+        } else {
+          showToast(data.message || 'Upload failed', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Server connection failed', 'error');
+      }
+    });
+
+    // Run auth check on load
+    window.addEventListener('DOMContentLoaded', verifyAdmin);
+  </script>
+</body>
+</html>

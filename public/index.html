@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PicMix - Multiplayer 3x3 Puzzle Game</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">P</div>
+      <div class="logo-text">
+        <h1>PicMix</h1>
+        <span>by AI Budak batu 9 cheras</span>
+      </div>
+    </div>
+    
+    <div class="nav-links">
+      <a href="/dashboard.html" target="_blank" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.75rem;">
+        📊 Live Dashboard
+      </a>
+      <a href="/admin.html" id="admin-nav-link" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.75rem; display: none;">
+        ⚙️ Admin Panel
+      </a>
+      <div id="user-profile-badge" class="user-badge" style="display: none;">
+        <div class="avatar" id="user-avatar-char">U</div>
+        <span id="user-badge-name">Player</span>
+      </div>
+      <button id="logout-btn" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.75rem; display: none;">
+        Sign Out
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main>
+    
+    <!-- 1. Authentication View (Login/Register) -->
+    <section id="auth-view" class="auth-container glass-panel">
+      <div class="auth-header">
+        <h2>Welcome to PicMix</h2>
+        <p style="color: var(--text-muted);">The Ultimate Multiplayer 3x3 Image Puzzle Battle</p>
+      </div>
+      
+      <div class="auth-tabs">
+        <div id="tab-login" class="auth-tab active" onclick="switchAuthTab('login')">Sign In</div>
+        <div id="tab-register" class="auth-tab" onclick="switchAuthTab('register')">Sign Up</div>
+      </div>
+      
+      <!-- Login Form -->
+      <form id="login-form">
+        <div class="input-group">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" class="input-field" placeholder="Enter your username" required minlength="3">
+        </div>
+        <div class="input-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+          Start Playing
+        </button>
+      </form>
+      
+      <!-- Register Form (Hidden by default) -->
+      <form id="register-form" style="display: none;">
+        <div class="input-group">
+          <label for="register-username">Username</label>
+          <input type="text" id="register-username" class="input-field" placeholder="Choose a username" required minlength="3">
+        </div>
+        <div class="input-group">
+          <label for="register-password">Password</label>
+          <input type="password" id="register-password" class="input-field" placeholder="Choose a secure password" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+          Create Account
+        </button>
+      </form>
+    </section>
+
+    <!-- 2. Lobby View (Shown when authenticated) -->
+    <section id="lobby-view" class="lobby-grid" style="display: none;">
+      
+      <!-- Main Lobby Operations -->
+      <div class="lobby-panel glass-panel">
+        <div class="lobby-header">
+          <div>
+            <h2 style="font-size: 1.8rem; margin-bottom: 5px;">Battle Arena</h2>
+            <p style="color: var(--text-muted);">Find a match to compete in real-time tile sliding battles.</p>
+          </div>
+          <button id="find-match-btn" class="btn btn-primary">
+            ⚔️ Find Battle
+          </button>
+        </div>
+        
+        <!-- Image Gallery Preview -->
+        <div class="puzzle-images-section">
+          <h3 style="font-size: 1.2rem; color: var(--color-cyan);">Featured Puzzle Images</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">
+            One of these gorgeous images will be selected at random for your next battle.
+          </p>
+          <div id="image-gallery" class="image-selection-grid">
+            <!-- Dynamically populated -->
+            <p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Loading puzzle assets...</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Stats / Lobby Info Sidebar -->
+      <div class="sidebar-panel glass-panel">
+        <h3>Server Stats</h3>
+        
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="number" id="stat-online">0</div>
+            <div class="label">Online</div>
+          </div>
+          <div class="stat-box">
+            <div class="number" id="stat-queue">0</div>
+            <div class="label">In Queue</div>
+          </div>
+        </div>
+        
+        <!-- Player Personal Stats -->
+        <div class="personal-stats-section" style="margin-bottom: 25px;">
+          <h4 style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 15px;">Your Record</h4>
+          <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.15); padding: 15px; border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span>Rank Rating:</span>
+              <strong id="user-points" style="color: var(--color-cyan);">1000 ELO</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Games Played:</span>
+              <strong id="user-games">0</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Wins:</span>
+              <strong id="user-wins" style="color: #4ade80;">0</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span>Losses:</span>
+              <strong id="user-losses" style="color: #f87171;">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat / Announcements -->
+        <div class="lobby-chat-section">
+          <h4 style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px;">Lobby Chat</h4>
+          <div id="chat-messages" style="height: 150px; overflow-y: auto; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 10px; font-size: 0.85rem; margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="color: var(--color-cyan); font-style: italic;">Welcome to the chat! Find opponents and talk tactics.</div>
+          </div>
+          <form id="chat-form" style="display: flex; gap: 8px;">
+            <input type="text" id="chat-input" class="input-field" placeholder="Say something..." style="padding: 8px 12px; font-size: 0.85rem;" required>
+            <button type="submit" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem;">Send</button>
+          </form>
+        </div>
+      </div>
+      
+    </section>
+  </main>
+
+  <!-- Matchmaking Queue Overlay -->
+  <div id="matchmaking-modal" class="matchmaking-overlay" style="display: none;">
+    <div class="matchmaking-card glass-panel">
+      <h2 style="font-size: 1.8rem; margin-bottom: 10px;">Battle Queue</h2>
+      <p id="queue-status-text" style="color: var(--text-muted); font-size: 0.9rem;">Searching for players to match with...</p>
+      
+      <div class="radar-spinner"></div>
+      
+      <div style="margin: 15px 0;">
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Players in Queue:</span>
+        <div id="queue-players-list" style="font-size: 0.85rem; font-weight: bold; color: var(--color-cyan); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">...</div>
+      </div>
+      
+      <button id="cancel-match-btn" class="btn btn-danger" style="margin-top: 10px;">
+        Cancel Search
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast system -->
+  <div id="toast-container" class="toast">
+    <span id="toast-msg">Notification</span>
+  </div>
+
+  <!-- Load Scripts -->
+  <script src="/js/config.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/lobby.js"></script>
+</body>
+</html>
